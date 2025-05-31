@@ -53,12 +53,12 @@ Update your `config.json` file with the Discord settings:
     "channelId": "YOUR_ACTUAL_CHANNEL_ID_HERE",
     "updateInterval": 300000,
     "embedColor": "#00d4ff",
-    "serverName": "[EU] BreakPoint W.C.S. Realism NATO/RUS Everon Conflict",
-    "serverDescription": "dsc.gg/breakpoint"
+    "serverName": "Cool server",
+    "serverDescription": "Way cooler"
   },
   "gamedig": {
     "enabled": true,
-    "type": "armar",
+    "type": "armareforger",
     "host": "208.115.206.194",
     "port": 2200,
     "queryInterval": 30000,
@@ -133,7 +133,7 @@ dsc.gg/breakpoint
 📊 Server Stats
 Status: Online
 Players: 16/128
-Map: [WCS] New Everon V2 - North/South
+Map: Everon
 Server IP: 208.115.206.194:2200
 Uptime: 0h 8m 11s
 
