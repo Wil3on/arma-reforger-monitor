@@ -1,0 +1,153 @@
+{
+  "_comment_basic": "=== BASIC SETTINGS ===",
+  "logFileName": "console.log",
+  "_comment_logFileName": "Name of the log file to monitor",
+  
+  "updateInterval": 5000,
+  "_comment_updateInterval": "Check interval in milliseconds (5000 = 5 seconds)",
+  
+  "port": 3001,
+  "_comment_port": "Web API server port",
+  
+  "generateSampleVictoryData": false,
+  "_comment_generateSampleVictoryData": "Generate test data (false for production)",
+  
+  "victoryDuplicateCheckMinutes": 3,
+  "_comment_victoryDuplicateCheckMinutes": "Prevent duplicate victory detection window",
+
+  "_comment_gamedig": "=== GAMEDIG SETTINGS (Server Query) ===",
+  "gamedig": {
+    "enabled": true,
+    "_comment_enabled": "Enable server querying",
+    
+    "type": "armareforger",
+    "_comment_type": "Game type for GameDig",
+    
+    "host": "35.242.210.141",
+    "_comment_host": "Server IP address",
+    
+    "port": 17777,
+    "_comment_port": "Query port",
+    
+    "gamePort": 2001,
+    "_comment_gamePort": "Player connection port",
+    
+    "supportedPlatforms": ["PC", "PS5", "XBOX"],
+    "_comment_supportedPlatforms": "Supported platforms",
+    
+    "queryInterval": 20000,
+    "_comment_queryInterval": "Query frequency (20 seconds)",
+      "timeout": 10000,
+    "_comment_timeout": "Query timeout"
+  },
+
+  "_comment_discord": "=== DISCORD BOT SETTINGS ===",
+  "discord": {
+    "enabled": true,
+    "_comment_enabled": "Enable Discord integration",
+    
+    "botToken": "YOUR_BOT_TOKEN",
+    "_comment_botToken": "Bot token from Discord Developer Portal",
+    
+    "channelId": "YOUR_CHANNEL_ID",
+    "_comment_channelId": "Channel to post updates",
+    
+    "messageId": "YOUR_MESSAGE_ID",
+    "_comment_messageId": "Existing message to edit (optional)",
+    
+    "updateInterval": 30000,
+    "_comment_updateInterval": "Update frequency (30 seconds)",
+    
+    "embedColor": "#00d4ff",
+    "_comment_embedColor": "Embed color (hex)",
+    
+    "serverName": "Your Server Name",
+    "_comment_serverName": "Display name",
+      "serverDescription": "discord.gg/invite",
+    "_comment_serverDescription": "Description/invite link"
+  },
+
+  "_comment_crashMonitor": "=== CRASH MONITOR SETTINGS ===",
+  "crashMonitor": {
+    "enabled": true,
+    "_comment_enabled": "Enable crash monitoring",
+    
+    "serverExePath": "C:\\path\\to\\ArmaReforgerServer.exe",
+    "_comment_serverExePath": "Server executable path",
+    
+    "serverWorkingDir": "C:\\path\\to\\server",
+    "_comment_serverWorkingDir": "Server working directory",
+    
+    "enableAutoRestart": false,
+    "_comment_enableAutoRestart": "Auto-restart on crash",
+    
+    "restartDelaySeconds": 10,
+    "_comment_restartDelaySeconds": "Restart delay",
+    
+    "maxRestartAttempts": 0,
+    "_comment_maxRestartAttempts": "Max restart attempts (0 = unlimited)",
+    
+    "restartCooldownMinutes": 5,
+    "_comment_restartCooldownMinutes": "Cooldown between restarts",
+    
+    "serverDataLogFolder": "server_data_logs",
+    "_comment_serverDataLogFolder": "Log folder name",
+    
+    "serverDataLogIntervalHours": 24,
+    "_comment_serverDataLogIntervalHours": "New log file interval",
+    
+    "statsLogIntervalSec": 60,
+    "_comment_statsLogIntervalSec": "Stats logging frequency",
+    
+    "crashKeywords": [
+      "Application crashed!",
+      "FATAL ERROR",
+      "Exception Code:",
+      "Segmentation fault"
+    ],
+    "_comment_crashKeywords": "Keywords indicating crashes"
+  },
+
+  "_comment_logSource": "=== LOG SOURCE SETTINGS ===",
+  "logSource": {
+    "type": "local",
+    "_comment_type": "Use 'local' or 'remote'",
+    
+    "localPath": "C:\\path\\to\\server\\logs",
+    "_comment_localPath": "Path to log directory (for local type)",
+    
+    "remote": {
+      "enabled": false,
+      "_comment_enabled": "Enable remote log fetching",
+      
+      "protocol": "sftp",
+      "_comment_protocol": "Protocol: 'sftp' or 'ftp'",
+      
+      "host": "your-server.com",
+      "_comment_host": "Remote server hostname/IP",
+      
+      "port": 22,
+      "_comment_port": "Remote port (22 for SFTP)",
+      
+      "username": "your-username",
+      "_comment_username": "Authentication username",
+      
+      "password": "",
+      "_comment_password": "Password (OR use privateKeyPath)",
+      
+      "privateKeyPath": "",
+      "_comment_privateKeyPath": "Private key file (recommended)",
+      
+      "remotePath": "/path/to/console.log",
+      "_comment_remotePath": "Remote log file path",
+      
+      "localCachePath": "./temp_logs",
+      "_comment_localCachePath": "Local cache directory",
+      
+      "downloadInterval": 10000,
+      "_comment_downloadInterval": "Download frequency (10 seconds)",
+        "keepLocalFiles": true,
+      "_comment_keepLocalFiles": "Keep cached files"
+    }
+  }
+}

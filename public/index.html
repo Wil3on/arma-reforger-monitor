@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arma Reforger Monitor | Real-time Server Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #111116;
+            --bg-tertiary: #1a1a23;
+            --bg-quaternary: #242435;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7c3aed;
+            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --text-muted: #6b7280;
+            --border-color: #2d2d3a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --shadow-primary: 0 4px 20px rgba(0, 212, 255, 0.15);
+            --shadow-secondary: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --border-radius: 4px;
+            --border-radius-lg: 6px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        h1 {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 1px;
+        }
+
+        .fps-display, .players-display, .uptime-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-primary);
+        }
+        
+        /* Disable hover effects for crash metrics */
+        .metric.no-hover:hover {
+            transform: none;
+            box-shadow: var(--shadow-primary);
+            border-color: var(--border-color);
+        }
+        
+        .metric:hover h2.nato-faction,
+        .faction-side:hover h3.nato-faction {
+            text-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+        }
+        
+        .metric:hover h2.russia-faction,
+        .faction-side:hover h3.russia-faction {
+            text-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+
+        .metric h2 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .metric .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(2rem, 6vw, 2.75rem);
+            font-weight: 700;
+            margin: 1rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .metric.latest .value {
+            color: var(--success);
+        }
+
+        .metric.average .value {
+            color: var(--warning);
+        }
+
+        .metric:not(.latest):not(.average) .value {
+            color: var(--accent-primary);
+        }
+
+        .chart-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            height: 400px;
+            max-height: 50vh;
+            box-shadow: var(--shadow-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.02) 0%, rgba(124, 58, 237, 0.02) 100%);
+            pointer-events: none;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            font-weight: 400;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            justify-content: center;
+            gap: 0;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 0.25rem;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .tab-button {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            position: relative;
+            font-size: 0.875rem;
+            flex: 1;
+            text-align: center;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .tab-button:last-child {
+            border-right: none;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-button.active {
+            color: var(--text-primary);
+            background: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Time period selector */
+        .time-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 0;
+            background: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .time-controls button {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--border-color);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            flex: 1;
+            text-align: center;
+        }
+
+        .time-controls button:last-child {
+            border-right: none;
+        }
+
+        .time-controls button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .time-controls button.active {
+            color: var(--text-primary);
+            background: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .min-max-display {
+            display: none;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .victory-message {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+            line-height: 1.5;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .victory-history {
+            margin-bottom: 2rem;
+        }
+
+        .victory-history h3 {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .history-item {
+            padding: 1rem 1.5rem;
+            margin: 0.75rem 0;
+            background: #07070842;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--accent-primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .history-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .history-item:hover::before {
+            opacity: 1;
+        }
+
+        .history-item.nato {
+            border-left-color: var(--accent-primary);
+        }
+
+        .history-item.russia {
+            border-left-color: var(--error);
+        }
+
+        .history-item .faction {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .history-item .timestamp {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            float: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .history-item .crash-details {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .history-item .incident-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-item .crash-details div {
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+
+        .history-item .crash-details strong {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .history-list {
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-primary) transparent;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+
+        /* Enhanced status colors */
+        .status-online {
+            color: #00ff88 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+        }
+        
+        .status-offline {
+            color: #ff4757 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(255, 71, 87, 0.3);
+        }
+        
+        /* NATO and Russia faction colors */
+        .nato-color {
+            color: #2980b9 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(41, 128, 185, 0.3);
+        }
+        
+        .russia-color {
+            color: #e74c3c !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.3);
+        }
+        
+        /* Enhanced victory display styling */
+        .metric h2.nato-faction,
+        .faction-side h3.nato-faction {
+            color: #3498db; /* Fallback color */
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .metric h2.russia-faction,
+        .faction-side h3.russia-faction {
+            color: #e74c3c; /* Fallback color */
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .victory-message.leading {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        
+        .victory-message.tied {
+            color: #ffa500;
+            font-weight: 600;
+        }
+        
+        .victory-message.behind {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        /* Dark gray percentage colors */
+        .percentage-color {
+            color: #4a5568 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(74, 85, 104, 0.4);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: clamp(1.75rem, 8vw, 2.5rem);
+                margin-bottom: 2rem;
+            }
+
+            .fps-display, .players-display, .uptime-display {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .metric {
+                padding: 1.5rem;
+            }
+
+            .chart-container {
+                height: 300px;
+                padding: 1rem;
+            }
+
+            .tab-content {
+                padding: 1.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                padding: 1rem;
+                text-align: center;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .tab-button:last-child {
+                border-bottom: none;
+            }
+
+            .time-controls {
+                flex-direction: column;
+            }
+
+            .time-controls button {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .time-controls button:last-child {
+                border-bottom: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.75rem;
+            }
+
+            h1 {
+                font-size: clamp(1.5rem, 10vw, 2rem);
+            }
+
+            .metric {
+                padding: 1rem;
+            }
+
+            .metric .value {
+                font-size: clamp(1.75rem, 8vw, 2.25rem);
+            }
+
+            .chart-container {
+                height: 250px;
+                padding: 0.75rem;
+            }
+
+            .tab-content {
+                padding: 1rem;
+            }
+
+            .time-controls button {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            .history-item {
+                padding: 0.75rem 1rem;
+            }
+
+            .history-item .faction {
+                font-size: 0.9rem;
+            }
+
+            .history-item .timestamp {
+                font-size: 0.75rem;
+                display: block;
+                float: none;
+                margin-top: 0.25rem;
+            }
+        }
+
+        /* Loading states and animations */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+
+        /* Side-by-side victories layout */
+        .victories-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .victories-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-primary), var(--shadow-secondary);
+            transform: translateY(-2px);
+        }
+        
+        .victories-title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .factions-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+        
+        .faction-side {
+            flex: 1;
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .faction-side:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .nato-side {
+            border-left: 3px solid #3498db;
+        }
+        
+        .russia-side {
+            border-left: 3px solid #e74c3c;
+        }
+        
+        .vs-divider {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            min-width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+        
+        .faction-side h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .faction-side .value {
+            margin-bottom: 1rem;
+        }
+        
+        .faction-side .victory-message {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        /* Responsive adjustments for victories */
+        @media (max-width: 768px) {
+            .factions-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .vs-divider {
+                transform: rotate(90deg);
+                margin: 1rem 0;
+            }
+            
+            .victories-card {
+                padding: 1.5rem;
+            }
+            
+            .victories-title {
+                font-size: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Arma Reforger Monitor</h1>
+        
+        <div class="tabs">
+            <button class="tab-button active" data-tab="fps-tab">Server FPS</button>
+            <button class="tab-button" data-tab="players-tab">Players</button>
+            <button class="tab-button" data-tab="uptime-tab">Uptime</button>
+            <button class="tab-button" data-tab="victories-tab">Last Won</button>
+            <button class="tab-button" data-tab="crashes-tab">Crashes</button>
+        </div>
+        
+        <!-- FPS Tab Content -->
+        <div id="fps-tab" class="tab-content active">
+            <div class="fps-display">
+                <div class="metric latest">
+                    <h2>Latest FPS</h2>
+                    <div id="latest-fps" class="value">--</div>
+                </div>
+                
+                <div class="metric average">
+                    <h2>Average FPS</h2>
+                    <div id="average-fps" class="value">--</div>
+                </div>
+            </div>
+            
+            <div class="time-controls" id="fps-time-controls">
+                <button class="time-button active" data-timeframe="raw">Live</button>
+                <button class="time-button" data-timeframe="hourly">Hourly</button>
+                <button class="time-button" data-timeframe="daily">Daily</button>
+                <button class="time-button" data-timeframe="weekly">Weekly</button>
+                <button class="time-button" data-timeframe="monthly">Monthly</button>
+            </div>
+            
+            <div id="fps-min-max" class="min-max-display">
+                Min: <span id="fps-min">--</span> | Max: <span id="fps-max">--</span>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="fps-chart"></canvas>
+            </div>
+            
+            <div id="fps-last-updated" class="last-updated">Last updated: -- (Auto Update: <span id="refresh-rate-fps">5</span>s)</div>
+        </div>
+        
+        <!-- Players Tab Content -->
+        <div id="players-tab" class="tab-content">
+            <div class="players-display">
+                <div class="metric latest">
+                    <h2>Current Players</h2>
+                    <div id="latest-players" class="value">--</div>
+                </div>
+                
+                <div class="metric average">
+                    <h2>Average Players</h2>
+                    <div id="average-players" class="value">--</div>
+                </div>
+            </div>
+            
+            <div class="time-controls" id="players-time-controls">
+                <button class="time-button active" data-timeframe="raw">Live</button>
+                <button class="time-button" data-timeframe="hourly">Hourly</button>
+                <button class="time-button" data-timeframe="daily">Daily</button>
+                <button class="time-button" data-timeframe="weekly">Weekly</button>
+                <button class="time-button" data-timeframe="monthly">Monthly</button>
+            </div>
+            
+            <div id="players-min-max" class="min-max-display">
+                Min: <span id="players-min">--</span> | Max: <span id="players-max">--</span>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="players-chart"></canvas>
+            </div>
+            
+            <div id="players-last-updated" class="last-updated">Last updated: -- (Auto Update: <span id="refresh-rate-players">5</span>s)</div>
+        </div>
+        
+        <!-- Uptime Tab Content -->
+        <div id="uptime-tab" class="tab-content">
+            <div class="uptime-display">
+                <div class="metric">
+                    <h2>Server Uptime</h2>
+                    <div class="value">
+                        <span id="uptime-days">--</span> <span class="unit">days</span>
+                        <span id="uptime-hours">--</span> <span class="unit">hours</span>
+                        <span id="uptime-minutes">--</span> <span class="unit">minutes</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="uptime-details">
+                <h3>Server Status</h3>
+                <div id="uptime-string" class="uptime-string">Calculating uptime...</div>
+                
+                <p><strong>Start Time:</strong> <span id="uptime-start-time">--</span></p>
+                <p><strong>Current Time:</strong> <span id="uptime-current-time">--</span></p>
+                <p><strong>Status:</strong> <span id="uptime-status">--</span></p>
+            </div>
+            
+            <div id="uptime-last-updated" class="last-updated">Last updated: -- (Auto Update: <span id="refresh-rate-uptime">5</span>s)</div>
+        </div>
+        
+        <!-- Victories Tab Content -->
+        <div id="victories-tab" class="tab-content">
+            <div class="victories-display">
+                <div class="victories-card">
+                    <h2 class="victories-title">Victory Standings</h2>
+                    <div class="factions-container">
+                        <div class="faction-side nato-side">
+                            <h3 class="nato-faction">NATO</h3>
+                            <div class="value">
+                                <span id="nato-wins" class="nato-color">--</span> <span class="unit">wins</span>
+                                <div class="percentage"><span id="nato-percentage" class="percentage-color">--</span></div>
+                            </div>
+                            <div id="nato-message" class="victory-message">--</div>
+                        </div>
+                        
+                        <div class="vs-divider">VS</div>
+                        
+                        <div class="faction-side russia-side">
+                            <h3 class="russia-faction">RUSSIA</h3>
+                            <div class="value">
+                                <span id="russia-wins" class="russia-color">--</span> <span class="unit">wins</span>
+                                <div class="percentage"><span id="russia-percentage" class="percentage-color">--</span></div>
+                            </div>
+                            <div id="russia-message" class="victory-message">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <br>
+                
+                <div class="metric">
+                    <h2>Total Rounds</h2>
+                    <div class="value">
+                        <span id="total-rounds">--</span> <span class="unit">rounds</span>
+                    </div>
+                    <div id="last-victory-info" class="victory-message">--</div>
+                </div>
+            </div>
+            
+            <div class="victory-history">
+                <br>
+                <h3>Recent Victories</h3>
+                <div id="victory-history-list" class="history-list">
+                    Loading victory history...
+                </div>
+            </div>
+            
+            <div id="victories-last-updated" class="last-updated">Last updated: -- (Auto Update: <span id="refresh-rate-victories">5</span>s)</div>
+        </div>
+
+        <!-- Crashes Tab Content -->
+        <div id="crashes-tab" class="tab-content">
+            <div class="crashes-display">
+                <div class="metric no-hover">
+                    <h2>🚨 Server Crashes</h2>
+                    <div class="value">
+                        Total <span id="total-crashes">--</span> <span class="unit">incidents</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="crash-history">
+                <br>
+                <h3>Recent Crash Incidents</h3>
+                <div id="crash-history-list" class="history-list">
+                    Loading crash history...
+                </div>
+            </div>
+            
+            <div id="crashes-last-updated" class="last-updated">Last updated: -- (Auto Update: <span id="refresh-rate-crashes">5</span>s)</div>
+        </div>
+        
+        <div class="footer">
+            <p>🚀 Powered by <strong>Arma Reforger Monitor</strong> | Real-time server monitoring with crash detection</p>
+            <p>📊 Live FPS • 👥 Player Count • ⏱️ Uptime • 🏆 Victory Stats</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Configuration
+        const refreshInterval = 5000; // 5 seconds, should match server config
+        
+        // State variables
+        let fpsTimeframe = 'raw';
+        let playersTimeframe = 'raw';
+        
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Update active tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Time period control functionality
+        const fpsTimeButtons = document.querySelectorAll('#fps-time-controls .time-button');
+        const playersTimeButtons = document.querySelectorAll('#players-time-controls .time-button');
+        
+        fpsTimeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                fpsTimeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                fpsTimeframe = button.getAttribute('data-timeframe');
+                
+                // Show/hide min-max display for aggregated data
+                document.getElementById('fps-min-max').style.display = 
+                    fpsTimeframe !== 'raw' ? 'block' : 'none';
+                
+                // Fetch new data with the selected timeframe
+                fetchFpsData();
+            });
+        });
+        
+        playersTimeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                playersTimeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                playersTimeframe = button.getAttribute('data-timeframe');
+                
+                // Show/hide min-max display for aggregated data
+                document.getElementById('players-min-max').style.display = 
+                    playersTimeframe !== 'raw' ? 'block' : 'none';
+                
+                // Fetch new data with the selected timeframe
+                fetchPlayersData();
+            });
+        });
+
+        // Initialize FPS chart
+        const fpsCtx = document.getElementById('fps-chart').getContext('2d');
+        const fpsChart = new Chart(fpsCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'FPS Values',
+                    data: [],
+                    borderColor: '#4fc3f7',
+                    backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'FPS',
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#a0a0a0'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#a0a0a0'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(1);
+                                }
+                                return label;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+        
+        // Initialize Players chart
+        const playersCtx = document.getElementById('players-chart').getContext('2d');
+        const playersChart = new Chart(playersCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Player Count',
+                    data: [],
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true,
+                    stepped: true // Using stepped line for player count
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true, // Players count should start at 0
+                        title: {
+                            display: true,
+                            text: 'Players',
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            precision: 0, // Only show whole numbers
+                            stepSize: 1,  // Step by 1
+                            color: '#a0a0a0'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#a0a0a0'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(0);
+                                }
+                                return label;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+
+        // Helper function to update FPS status
+        function getStatusFromFPS(fps) {
+            if (!fps) return { text: 'No Data', color: '#6c757d' };
+            if (fps >= 60) return { text: 'Excellent', color: '#28a745' };
+            if (fps >= 30) return { text: 'Good', color: '#17a2b8' };
+            return { text: 'Poor', color: '#dc3545' };
+        }
+        
+        // Helper function to update Players status
+        function getStatusFromPlayerCount(count) {
+            if (!count && count !== 0) return { text: 'No Data', color: '#6c757d' };
+            if (count === 0) return { text: 'Empty', color: '#dc3545' };
+            if (count < 5) return { text: 'Low', color: '#fd7e14' };
+            if (count < 10) return { text: 'Medium', color: '#17a2b8' };
+            return { text: 'High', color: '#28a745' };
+        }
+
+        // Update the FPS dashboard with received data
+        function updateFpsDashboard(data) {
+            // Update metrics
+            document.getElementById('latest-fps').textContent = data.latest ? data.latest.toFixed(1) : '--';
+            
+            // Calculate average from the data
+            let averageFPS = '--';
+            if (data.data && data.data.length > 0) {
+                const sum = data.data.reduce((a, b) => a + b, 0);
+                averageFPS = (sum / data.data.length).toFixed(1);
+            }
+            document.getElementById('average-fps').textContent = averageFPS;
+            
+            // Status calculation is still useful for other parts of the app, but don't try to update removed element
+            const status = getStatusFromFPS(data.latest);
+            
+            // Update chart datasets
+            if (fpsTimeframe !== 'raw' && data.minValues && data.maxValues) {
+                // Multiple datasets for aggregated data
+                fpsChart.data.labels = data.labels;
+                
+                // Clear existing datasets
+                fpsChart.data.datasets = [];
+                
+                // Add average dataset
+                fpsChart.data.datasets.push({
+                    label: 'Average FPS',
+                    data: data.values,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: false
+                });
+                
+                // Add min-max range using area chart
+                fpsChart.data.datasets.push({
+                    label: 'FPS Range',
+                    data: data.minValues,
+                    borderColor: 'rgba(0, 123, 255, 0.2)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.05)',
+                    borderWidth: 1,
+                    tension: 0.2,
+                    fill: '+1', // Fill to the next dataset
+                    pointRadius: 0
+                });
+                
+                fpsChart.data.datasets.push({
+                    label: 'Max FPS',
+                    data: data.maxValues,
+                    borderColor: 'rgba(0, 123, 255, 0.2)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    tension: 0.2,
+                    pointRadius: 0
+                });
+                
+                // Update min-max display
+                const minFps = Math.min(...data.minValues);
+                const maxFps = Math.max(...data.maxValues);
+                document.getElementById('fps-min').textContent = minFps.toFixed(1);
+                document.getElementById('fps-max').textContent = maxFps.toFixed(1);
+            } else {
+                // Simple single dataset for raw data
+                fpsChart.data.labels = data.labels || [];
+                
+                // Clear existing datasets
+                fpsChart.data.datasets = [{
+                    label: 'FPS Values',
+                    data: data.values || [],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true
+                }];
+            }
+            
+            // Update chart title based on timeframe
+            let chartTitle = 'FPS';
+            switch(fpsTimeframe) {
+                case 'hourly': chartTitle = 'Hourly FPS'; break;
+                case 'daily': chartTitle = 'Daily FPS'; break;
+                case 'weekly': chartTitle = 'Weekly FPS'; break;
+                case 'monthly': chartTitle = 'Monthly FPS'; break;
+                default: chartTitle = 'FPS';
+            }
+            
+            fpsChart.options.scales.y.title.text = chartTitle;
+            fpsChart.update();
+            
+            // Update last updated timestamp
+            document.getElementById('fps-last-updated').textContent = `Last updated: ${data.timestamp || new Date().toLocaleString()} (Auto Update: ${refreshInterval/1000}s)`;
+        }
+        
+        // Update the Players dashboard with received data
+        function updatePlayersDashboard(data) {
+            // Update metrics
+            const latestCount = data.latest !== undefined ? data.latest : (data.data && data.data.length > 0 ? data.data[data.data.length - 1] : null);
+            document.getElementById('latest-players').textContent = latestCount !== null && latestCount !== undefined ? latestCount : '--';
+            
+            // Calculate average from the data array
+            const average = data.data && data.data.length > 0 ? (data.data.reduce((sum, val) => sum + val, 0) / data.data.length).toFixed(1) : '--';
+            document.getElementById('average-players').textContent = average;
+            
+            // Status calculation is still useful for other parts of the app, but don't try to update removed element
+            const status = getStatusFromPlayerCount(latestCount);
+            
+            // Update chart datasets
+            if (playersTimeframe !== 'raw' && data.minValues && data.maxValues) {
+                // Multiple datasets for aggregated data
+                playersChart.data.labels = data.labels;
+                
+                // Clear existing datasets
+                playersChart.data.datasets = [];
+                
+                // Add average dataset
+                playersChart.data.datasets.push({
+                    label: 'Average Players',
+                    data: data.data,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: false,
+                    stepped: playersTimeframe === 'raw' // Only use stepped for raw data
+                });
+                
+                // Add min-max range using area chart
+                playersChart.data.datasets.push({
+                    label: 'Player Range',
+                    data: data.minValues,
+                    borderColor: 'rgba(40, 167, 69, 0.2)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.05)',
+                    borderWidth: 1,
+                    tension: 0.2,
+                    fill: '+1', // Fill to the next dataset
+                    pointRadius: 0
+                });
+                
+                playersChart.data.datasets.push({
+                    label: 'Max Players',
+                    data: data.maxValues,
+                    borderColor: 'rgba(40, 167, 69, 0.2)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    tension: 0.2,
+                    pointRadius: 0
+                });
+                
+                // Update min-max display
+                const minPlayers = Math.min(...data.minValues);
+                const maxPlayers = Math.max(...data.maxValues);
+                document.getElementById('players-min').textContent = minPlayers.toFixed(0);
+                document.getElementById('players-max').textContent = maxPlayers.toFixed(0);
+            } else {
+                // Simple single dataset for raw data
+                playersChart.data.labels = data.labels || [];
+                
+                // Clear existing datasets
+                playersChart.data.datasets = [{
+                    label: 'Player Count',
+                    data: data.data || [],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true,
+                    stepped: true // Use stepped line for player count
+                }];
+            }
+            
+            // Update chart title based on timeframe
+            let chartTitle = 'Players';
+            switch(playersTimeframe) {
+                case 'hourly': chartTitle = 'Hourly Players'; break;
+                case 'daily': chartTitle = 'Daily Players'; break;
+                case 'weekly': chartTitle = 'Weekly Players'; break;
+                case 'monthly': chartTitle = 'Monthly Players'; break;
+                default: chartTitle = 'Players';
+            }
+            
+            playersChart.options.scales.y.title.text = chartTitle;
+            playersChart.update();
+            
+            // Update last updated timestamp
+            document.getElementById('players-last-updated').textContent = `Last updated: ${data.lastUpdated || new Date().toLocaleString()} (Auto Update: ${refreshInterval/1000}s)`;
+        }
+
+        // Update the uptime display with received data
+        function updateUptimeDisplay(data) {
+            // Update time values
+            document.getElementById('uptime-days').textContent = data.uptime.days;
+            document.getElementById('uptime-hours').textContent = data.uptime.hours;
+            document.getElementById('uptime-minutes').textContent = data.uptime.minutes;
+            
+            // Update details
+            document.getElementById('uptime-string').textContent = data.message || data.uptimeString;
+            document.getElementById('uptime-start-time').textContent = data.startTime ? new Date(data.startTime).toLocaleString() : 'Unknown';
+            document.getElementById('uptime-current-time').textContent = new Date(data.currentTime).toLocaleString();
+            document.getElementById('uptime-status').textContent = data.status;
+            
+            // Style status with enhanced colors
+            const statusElement = document.getElementById('uptime-status');
+            statusElement.className = ''; // Clear existing classes
+            
+            if (data.status === 'active' || data.status === 'online') {
+                statusElement.textContent = 'Online';
+                statusElement.className = 'status-online';
+            } else {
+                statusElement.textContent = 'Offline';
+                statusElement.className = 'status-offline';
+            }
+            
+            // Update last updated
+            document.getElementById('uptime-last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (Auto Update: ${refreshInterval/1000}s)`;
+        }
+        
+        // Fetch FPS data from API
+        function fetchFpsData() {
+            fetch(`/api/fps?timeframe=${fpsTimeframe}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateFpsDashboard(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching FPS data:', error);
+                });
+        }
+        
+        // Fetch Players data from API
+        function fetchPlayersData() {
+            fetch(`/api/players?timeframe=${playersTimeframe}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updatePlayersDashboard(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching Players data:', error);
+                });
+        }
+        
+        // Function to fetch uptime data
+        function fetchUptimeData() {
+            fetch('/api/uptime')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateUptimeDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching uptime data:', error);
+                    const statusElement = document.getElementById('uptime-status');
+                    statusElement.textContent = 'Error';
+                    statusElement.className = 'status-offline';
+                });
+        }
+        
+        // Function to fetch victories data
+        function fetchVictoriesData() {
+            fetch('/api/victories')
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    // Update with correct data structure
+                    document.getElementById('nato-wins').textContent = data.totals.nato;
+                    document.getElementById('russia-wins').textContent = data.totals.russia;
+                    document.getElementById('total-rounds').textContent = data.totals.total;
+                    
+                    // Calculate percentages
+                    const natoPercentage = data.totals.total > 0 ? ((data.totals.nato / data.totals.total) * 100).toFixed(1) : '0.0';
+                    const russiaPercentage = data.totals.total > 0 ? ((data.totals.russia / data.totals.total) * 100).toFixed(1) : '0.0';
+                    
+                    document.getElementById('nato-percentage').textContent = natoPercentage + '%';
+                    document.getElementById('russia-percentage').textContent = russiaPercentage + '%';
+                    
+                    // Create status messages with enhanced styling and icons
+                    const natoMessage = data.totals.nato > data.totals.russia ? '↑ Leading' : data.totals.nato === data.totals.russia ? 'Tied' : '↓ Behind';
+                    const russiaMessage = data.totals.russia > data.totals.nato ? '↑ Leading' : data.totals.russia === data.totals.nato ? 'Tied' : '↓ Behind';
+                    
+                    // Update NATO message with appropriate class
+                    const natoMessageElement = document.getElementById('nato-message');
+                    natoMessageElement.textContent = natoMessage;
+                    natoMessageElement.className = `victory-message ${natoMessage.includes('Leading') ? 'leading' : natoMessage.includes('Behind') ? 'behind' : 'tied'}`;
+                    
+                    // Update Russia message with appropriate class
+                    const russiaMessageElement = document.getElementById('russia-message');
+                    russiaMessageElement.textContent = russiaMessage;
+                    russiaMessageElement.className = `victory-message ${russiaMessage.includes('Leading') ? 'leading' : russiaMessage.includes('Behind') ? 'behind' : 'tied'}`;
+                    
+                    // Last victory info with enhanced styling
+                    if (data.lastVictory) {
+                        const lastVictoryDate = new Date(data.lastVictory.timestamp).toLocaleString();
+                        const factionClass = data.lastVictory.faction === 'NATO' ? 'nato-color' : 'russia-color';
+                        document.getElementById('last-victory-info').innerHTML = 
+                            `Last victory: <span class="${factionClass}">${data.lastVictory.faction}</span> at ${lastVictoryDate}`;
+                    }
+                    
+                    // Update history
+                    const historyList = document.getElementById('victory-history-list');
+                    if (data.history && data.history.length > 0) {
+                        historyList.innerHTML = data.history
+                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                            .map(victory => {
+                                const victoryDate = new Date(victory.timestamp).toLocaleString();
+                                const factionClass = victory.faction.toLowerCase();
+                                return `<div class="history-item ${factionClass}">
+                                    <span class="faction">${victory.faction}</span>
+                                    <span class="timestamp">${victoryDate}</span>
+                                    <div style="clear: both;"></div>
+                                </div>`;
+                            }).join('');
+                    }
+                    
+                    // Update last updated
+                    document.getElementById('victories-last-updated').textContent = 
+                        `Last updated: ${new Date().toLocaleString()} (Auto Update: ${refreshInterval/1000}s)`;
+                })
+                .catch(error => {
+                    console.error('Error fetching victories data:', error);
+                });
+        }
+        
+        // Function to fetch crash data
+        function fetchCrashData() {
+            fetch('/api/crashes')
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    // Update crash statistics
+                    document.getElementById('total-crashes').textContent = data.totalCrashes || 0;
+                    
+                    // Update crash history
+                    const crashHistoryList = document.getElementById('crash-history-list');
+                    if (data.crashHistory && data.crashHistory.length > 0) {
+                        crashHistoryList.innerHTML = data.crashHistory
+                            .slice(0, 10) // Show last 10 crashes
+                            .map(incident => {
+                                return `<div class="history-item">
+                                    <div class="incident-header">
+                                        <span class="faction">🚨 Incident ID: ${incident.incidentId || 'Unknown'}</span>
+                                        <span class="timestamp">${incident.incidentTimestamp || 'Unknown'}</span>
+                                    </div>
+                                    <div class="crash-details">
+                                        <div><strong>Type:</strong> ${incident.incidentType || 'Server crash detected'}</div>
+                                        <div><strong>Keyword:</strong> ${incident.keyword || 'Unknown'}</div>
+                                        <div><strong>Uptime until crash:</strong> ${incident.uptime || 'Unknown'}</div>
+                                    </div>
+                                    <div style="clear: both;"></div>
+                                </div>`;
+                            }).join('');
+                    } else {
+                        crashHistoryList.innerHTML = '<div class="history-item"><span class="faction">✅ No crashes</span><span class="timestamp">Server running stable</span></div>';
+                    }
+                    
+                    // Update last updated
+                    document.getElementById('crashes-last-updated').textContent = 
+                        `Last updated: ${new Date().toLocaleString()} (Auto Update: ${refreshInterval/1000}s)`;
+                })
+                .catch(error => {
+                    console.error('Error fetching crash data:', error);
+                    // Set fallback values
+                    document.getElementById('total-crashes').textContent = '--';
+                    document.getElementById('crash-history-list').innerHTML = '<div class="history-item">Unable to load crash history</div>';
+                });
+        }
+        
+        // Function to fetch all data
+        function fetchAllData() {
+            fetchFpsData();
+            fetchPlayersData();
+            fetchUptimeData();
+            fetchVictoriesData();
+            fetchCrashData();
+        }
+
+        // Refresh rate is now included directly in the last updated text
+        
+        // Initial data fetch
+        fetchAllData();
+        
+        // Set up interval for data refresh
+        setInterval(fetchAllData, refreshInterval);
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "name": "arma-reforger-monitor",
+  "version": "1.0.0",
+  "description": "Comprehensive monitoring system for Arma Reforger servers with Discord integration and web dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "arma-reforger",
+    "server-monitor",
+    "discord-bot",
+    "gamedig",
+    "fps-monitor",
+    "gaming",
+    "server-stats"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/arma-reforger-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/arma-reforger-monitor/issues"
+  },
+  "homepage": "https://github.com/yourusername/arma-reforger-monitor#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "discord.js": "^14.14.1",
+    "express": "^4.18.2",
+    "fs-extra": "^11.2.0",
+    "gamedig": "^5.3.0",
+    "moment": "^2.29.4",
+    "ssh2-sftp-client": "^12.0.0"
+  }
+}
