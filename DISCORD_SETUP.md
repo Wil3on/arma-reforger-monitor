@@ -127,8 +127,7 @@ npm start
 The bot will create an embed that looks like this:
 
 ```
-[EU] BreakPoint W.C.S. Realism NATO/RUS Everon Conflict
-dsc.gg/breakpoint
+Cool server name
 
 📊 Server Stats
 Status: Online
