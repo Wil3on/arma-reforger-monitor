@@ -16,16 +16,16 @@
     "gaming",
     "server-stats"
   ],
-  "author": "Your Name",
+  "author": "Wil3on",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/arma-reforger-monitor.git"
+    "url": "https://github.com/Wil3on/arma-reforger-monitor.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/arma-reforger-monitor/issues"
+    "url": "https://github.com/Wil3on/arma-reforger-monitor/issues"
   },
-  "homepage": "https://github.com/yourusername/arma-reforger-monitor#readme",
+  "homepage": "https://github.com/Wil3on/arma-reforger-monitor#readme",
   "dependencies": {
     "cors": "^2.8.5",
     "discord.js": "^14.14.1",
