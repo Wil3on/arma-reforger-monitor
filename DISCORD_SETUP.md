@@ -53,12 +53,12 @@ Update your `config.json` file with the Discord settings:
     "channelId": "YOUR_ACTUAL_CHANNEL_ID_HERE",
     "updateInterval": 300000,
     "embedColor": "#00d4ff",
-    "serverName": "[EU] BreakPoint W.C.S. Realism NATO/RUS Everon Conflict",
-    "serverDescription": "dsc.gg/breakpoint"
+    "serverName": "Server 1",
+    "serverDescription": "Cool server"
   },
   "gamedig": {
     "enabled": true,
-    "type": "armar",
+    "type": "armareforger",
     "host": "208.115.206.194",
     "port": 2200,
     "queryInterval": 30000,
@@ -80,7 +80,7 @@ Update your `config.json` file with the Discord settings:
 
 The GameDig configuration is used to query your Arma Reforger server:
 
-- `type`: Set to `"armar"` for Arma Reforger
+- `type`: Set to `"armareforger"` for Arma Reforger
 - `host`: Your server's IP address
 - `port`: Your server's query port (usually game port + 1)
 - `queryInterval`: How often to query the server (milliseconds)
@@ -127,13 +127,12 @@ npm start
 The bot will create an embed that looks like this:
 
 ```
-[EU] BreakPoint W.C.S. Realism NATO/RUS Everon Conflict
-dsc.gg/breakpoint
+Cool server name
 
 📊 Server Stats
 Status: Online
 Players: 16/128
-Map: [WCS] New Everon V2 - North/South
+Map: Everon
 Server IP: 208.115.206.194:2200
 Uptime: 0h 8m 11s
 

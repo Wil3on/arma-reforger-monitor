@@ -674,42 +674,74 @@ async function logIncident(incidentType, keyword = null, processUptime = null, a
 
 function findServerProcess() {
   return new Promise((resolve) => {
-    exec('tasklist /FI "IMAGENAME eq ArmaReforgerServer.exe" /FO CSV', (error, stdout) => {
-      if (error) {
-        resolve(null);
-        return;
-      }
-
-      const lines = stdout.split('\n');
-      if (lines.length > 1) {
-        const processLine = lines[1];
-        const match = processLine.match(/"ArmaReforger\.exe","(\d+)"/);
-        if (match) {
-          resolve({
-            pid: parseInt(match[1]),
-            startTime: new Date() // Approximation - we can't get exact start time easily
-          });
+    const isLinux = config.crashMonitor.isLinux || process.platform === 'linux';
+    
+    if (isLinux) {
+      // Linux process finding using ps command
+      const processName = config.crashMonitor.linuxProcessName || 'ArmaReforgerServer';
+      exec(`ps aux | grep "${processName}" | grep -v grep`, (error, stdout) => {
+        if (error || !stdout.trim()) {
+          resolve(null);
           return;
         }
-      }
-      resolve(null);
-    });
+
+        const lines = stdout.trim().split('\n');
+        if (lines.length > 0) {
+          const processLine = lines[0];
+          const parts = processLine.split(/\s+/);
+          if (parts.length >= 2) {
+            resolve({
+              pid: parseInt(parts[1]),
+              startTime: new Date() // Approximation - we can't get exact start time easily
+            });
+            return;
+          }
+        }
+        resolve(null);
+      });
+    } else {
+      // Windows process finding using tasklist
+      exec('tasklist /FI "IMAGENAME eq ArmaReforgerServer.exe" /FO CSV', (error, stdout) => {
+        if (error) {
+          resolve(null);
+          return;
+        }
+
+        const lines = stdout.split('\n');
+        if (lines.length > 1) {
+          const processLine = lines[1];
+          const match = processLine.match(/"ArmaReforger\.exe","(\d+)"/);
+          if (match) {
+            resolve({
+              pid: parseInt(match[1]),
+              startTime: new Date() // Approximation - we can't get exact start time easily
+            });
+            return;
+          }
+        }
+        resolve(null);
+      });
+    }
   });
 }
 
 async function startServerProcess(reason = "Manual") {
   if (!crashMonitorState) return null;
   
-  log(`[${formatTimestamp()}] Attempting to start server process... (Reason: ${reason})`, 'cyan');
+  const isLinux = config.crashMonitor.isLinux || process.platform === 'linux';
+  log(`[${formatTimestamp()}] Attempting to start server process on ${isLinux ? 'Linux' : 'Windows'}... (Reason: ${reason})`, 'cyan');
 
   try {
-    if (!fs.existsSync(config.crashMonitor.serverExePath)) {
-      log(`Error: Server executable not found at: ${config.crashMonitor.serverExePath}`, 'red');
+    const serverExePath = isLinux ? config.crashMonitor.linuxServerExePath : config.crashMonitor.serverExePath;
+    const serverWorkingDir = isLinux ? config.crashMonitor.linuxServerWorkingDir : config.crashMonitor.serverWorkingDir;
+    
+    if (!fs.existsSync(serverExePath)) {
+      log(`Error: Server executable not found at: ${serverExePath}`, 'red');
       return null;
     }
 
-    const serverProcess = spawn(config.crashMonitor.serverExePath, [], {
-      cwd: config.crashMonitor.serverWorkingDir,
+    const serverProcess = spawn(serverExePath, [], {
+      cwd: serverWorkingDir,
       detached: true,
       stdio: 'ignore'
     });
@@ -942,13 +974,11 @@ async function monitorForCrashes(logFilePath) {
             crashUptime = (currentTime - crashMonitorState.serverProcess.startTime) / 1000;
           }
 
-          await logIncident('Crash', keyword, crashUptime);
-
-          // Terminate the process
+          await logIncident('Crash', keyword, crashUptime);          // Terminate the process
           if (crashMonitorState.serverProcess) {
             log(`Attempting to terminate crashed process (PID: ${crashMonitorState.serverProcess.pid})...`, 'yellow');
             try {
-              process.kill(crashMonitorState.serverProcess.pid, 'SIGTERM');
+              await terminateServerProcess(crashMonitorState.serverProcess.pid, 'crash');
             } catch (killError) {
               log(`Warning: Could not terminate process: ${killError.message}`, 'yellow');
             }
@@ -1059,6 +1089,55 @@ async function monitorForCrashes(logFilePath) {
   } else {
     const restartInfo = config.crashMonitor.enableAutoRestart ? " | AutoRestart: ON" : " | AutoRestart: OFF";
     process.title = `Arma Reforger Server | Status: No Server Running | Last FPS: ${crashMonitorState.lastFpsValue} | Last Players: ${crashMonitorState.lastPlayerCount}${restartInfo}`;
+  }
+}
+
+// Cross-platform process termination function
+async function terminateServerProcess(pid, reason = 'manual') {
+  const isLinux = config.crashMonitor.isLinux || process.platform === 'linux';
+  log(`Terminating server process (PID: ${pid}) on ${isLinux ? 'Linux' : 'Windows'} - Reason: ${reason}`, 'yellow');
+  
+  if (isLinux) {
+    // Linux: Try graceful shutdown first, then force kill
+    try {
+      // First try SIGTERM (graceful shutdown)
+      process.kill(pid, 'SIGTERM');
+      log(`Sent SIGTERM to process ${pid}`, 'cyan');
+      
+      // Wait a few seconds for graceful shutdown
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Check if process still exists
+      try {
+        process.kill(pid, 0); // Signal 0 just checks if process exists
+        // Process still exists, force kill
+        log(`Process ${pid} still running, sending SIGKILL`, 'yellow');
+        process.kill(pid, 'SIGKILL');
+      } catch (checkError) {
+        // Process doesn't exist anymore, graceful shutdown worked
+        log(`Process ${pid} terminated gracefully`, 'green');
+      }
+    } catch (error) {
+      // Process might already be dead
+      log(`Process termination result: ${error.message}`, 'cyan');
+    }
+  } else {
+    // Windows: Use taskkill command for more reliable termination
+    try {
+      process.kill(pid, 'SIGTERM');
+      log(`Sent termination signal to process ${pid}`, 'cyan');
+      
+      // Also try taskkill as backup (Windows specific)
+      exec(`taskkill /PID ${pid} /F`, (error, stdout, stderr) => {
+        if (error) {
+          log(`Taskkill error: ${error.message}`, 'yellow');
+        } else {
+          log(`Taskkill executed successfully`, 'green');
+        }
+      });
+    } catch (error) {
+      log(`Process termination result: ${error.message}`, 'cyan');
+    }
   }
 }
 

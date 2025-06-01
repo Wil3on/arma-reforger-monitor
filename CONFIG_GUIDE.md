@@ -55,8 +55,12 @@ Copy the settings you need to your `config.json` file.
 {
   "crashMonitor": {
     "enabled": true,                         // Enable crash monitoring
-    "serverExePath": "C:\\path\\to\\ArmaReforgerServer.exe", // Server executable
-    "serverWorkingDir": "C:\\path\\to\\server", // Server working directory
+    "isLinux": false,                        // Set to true if running on Linux
+    "serverExePath": "C:\\path\\to\\ArmaReforgerServer.exe", // Server executable (Windows)
+    "serverWorkingDir": "C:\\path\\to\\server", // Server working directory (Windows)
+    "linuxServerExePath": "/home/user/ArmaReforger/ArmaReforgerServer", // Linux server path
+    "linuxServerWorkingDir": "/home/user/ArmaReforger/server", // Linux working directory
+    "linuxProcessName": "ArmaReforgerServer", // Process name to search for on Linux
     "enableAutoRestart": false,             // Auto-restart on crash
     "restartDelaySeconds": 10,              // Restart delay
     "maxRestartAttempts": 0,                // Max restart attempts (0 = unlimited)
@@ -68,7 +72,10 @@ Copy the settings you need to your `config.json` file.
       "Application crashed!",
       "FATAL ERROR",
       "Exception Code:",
-      "Segmentation fault"
+      "Segmentation fault",
+      "Killed",                             // Linux specific
+      "Aborted",                            // Linux specific  
+      "Bus error"                           // Linux specific
     ]
   }
 }
