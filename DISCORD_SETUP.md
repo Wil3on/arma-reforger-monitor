@@ -51,10 +51,9 @@ Update your `config.json` file with the Discord settings:
     "enabled": true,
     "botToken": "YOUR_ACTUAL_BOT_TOKEN_HERE",
     "channelId": "YOUR_ACTUAL_CHANNEL_ID_HERE",
-    "updateInterval": 300000,
-    "embedColor": "#00d4ff",
-    "serverName": "Server 1",
-    "serverDescription": "Cool server"
+    "updateInterval": 300000,    "embedColor": "#00d4ff",
+    "serverName": "YOUR_SERVER_NAME",
+    "serverDescription": "YOUR_SERVER_DESCRIPTION"
   },
   "gamedig": {
     "enabled": true,
