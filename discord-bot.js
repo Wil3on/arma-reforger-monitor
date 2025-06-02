@@ -149,25 +149,14 @@ class DiscordBot {
                            `**Game:** ${gameDigData.game || 'Arma Reforger'}\n` +
                            `**Version:** ${gameDigData.version || 'Unknown'}\n` +
                            `**Status:** ${gameDigData.online ? 'Online' : 'Offline'}\n` +                           `**Players:** ${gameDigData.players}/${gameDigData.maxPlayers}\n` +
-                           `**Map:** ${gameDigData.map}\n` +                           `**Server IP:** ${this.config.gamedig.host}:${this.config.gamedig.gamePort}\n` +
-                           `**Server Location:** ${gameDigData.location}\n` +
+                           `**Map:** ${gameDigData.map}\n` +                           `**Server IP:** ${this.config.gamedig.host}:${this.config.gamedig.gamePort}\n` +                           `**Server Location:** ${gameDigData.location}\n` +
                            `**Ping:** ${gameDigData.ping}ms\n` +
                            `**Crossplay:** ${this.config.gamedig.supportedPlatforms.length > 1 ? 'True' : 'False'} (${this.config.gamedig.supportedPlatforms.join(', ')})\n` +
-                           `**Uptime:** ${this.formatUptime(currentStats.uptime)}`,
+                           `**Uptime:** ${this.formatUptime(currentStats.uptime)}\n` +
+                           `**FPS:** ${currentStats.fps || 'N/A'}`,
                     inline: false
                 }
-            ]);            // Performance Stats
-            if (currentStats.fps !== undefined) {                embed.addFields([
-                    {
-                        name: '',
-                        value: `**FPS:** ${currentStats.fps || 'N/A'}\n` +
-                               `**Last Round Winner:** ${currentStats.lastRoundWinner || 'N/A'}`,
-                        inline: false
-                    }
-                ]);
-            }
-
-            // Victory Stats
+            ]);            // Victory Stats with Last Round Winner
             if (victories.nato !== undefined && victories.russia !== undefined) {
                 const total = victories.nato + victories.russia;
                 const natoPercentage = total > 0 ? Math.round((victories.nato / total) * 100) : 0;
@@ -188,7 +177,8 @@ class DiscordBot {
                 }                embed.addFields([
                     {
                         name: '',
-                        value: `**NATO:** ${victories.nato} wins ${natoPercentage}% ${natoStatus}\n` +
+                        value: `**Last Round Winner:** ${currentStats.lastRoundWinner || 'N/A'}\n` +
+                               `**NATO:** ${victories.nato} wins ${natoPercentage}% ${natoStatus}\n` +
                                `**RUSSIA:** ${victories.russia} wins ${russiaPercentage}% ${russiaStatus}`,
                         inline: false
                     }
