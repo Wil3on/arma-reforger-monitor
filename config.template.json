@@ -57,9 +57,11 @@
     
     "updateInterval": 30000,
     "_comment_updateInterval": "Update frequency (30 seconds)",
-    
-    "embedColor": "#00d4ff",
+      "embedColor": "#00d4ff",
     "_comment_embedColor": "Embed color (hex)",
+    
+    "showFPS": true,
+    "_comment_showFPS": "Show FPS in Discord embed (true/false)",
     
     "serverName": "Your Server Name",
     "_comment_serverName": "Display name",

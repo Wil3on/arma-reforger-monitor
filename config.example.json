@@ -40,9 +40,9 @@ Copy the settings you need to your `config.json` file.
     "enabled": true,                         // Enable Discord integration
     "botToken": "YOUR_BOT_TOKEN",           // Bot token from Discord Developer Portal
     "channelId": "YOUR_CHANNEL_ID",         // Channel to post updates
-    "messageId": "YOUR_MESSAGE_ID",         // Existing message to edit (optional)
-    "updateInterval": 30000,                // Update frequency (30 seconds)
+    "messageId": "YOUR_MESSAGE_ID",         // Existing message to edit (optional)    "updateInterval": 30000,                // Update frequency (30 seconds)
     "embedColor": "#00d4ff",                // Embed color (hex)
+    "showFPS": true,                        // Show FPS in Discord embed
     "serverName": "Your Server Name",       // Display name
     "serverDescription": "discord.gg/invite" // Description/invite link
   }
