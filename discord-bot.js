@@ -146,9 +146,8 @@ class DiscordBot {
                 });// Server Status
             embed.addFields([                {
                     name: '',                    value: `**${gameDigData.name}**\n\n` +
-                           `**Game:** ${gameDigData.game || 'Arma Reforger'}\n` +
-                           `**Version:** ${gameDigData.version || 'Unknown'}\n` +
-                           `**Status:** ${gameDigData.online ? 'Online' : 'Offline'}\n` +                           `**Players:** ${gameDigData.players}/${gameDigData.maxPlayers}\n` +
+                           `**Game:** ${gameDigData.game || 'Arma Reforger'}${gameDigData.version && gameDigData.version !== 'Unknown' ? ` (v${gameDigData.version})` : ''}\n` +
+                           `**Status:** ${gameDigData.online ? 'Online' : 'Offline'}\n` +`**Players:** ${gameDigData.players}/${gameDigData.maxPlayers}\n` +
                            `**Map:** ${gameDigData.map}\n` +                           `**Server IP:** ${this.config.gamedig.host}:${this.config.gamedig.gamePort}\n` +                           `**Server Location:** ${gameDigData.location}\n` +
                            `**Ping:** ${gameDigData.ping}ms\n` +                           `**Crossplay:** ${this.config.gamedig.supportedPlatforms.length > 1 ? 'True' : 'False'} (${this.config.gamedig.supportedPlatforms.join(', ')})\n` +
                            `**Uptime:** ${this.formatUptime(currentStats.uptime)}` +
